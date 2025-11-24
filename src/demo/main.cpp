@@ -10,7 +10,7 @@ int main() {
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<double> dist(0.0, 1.0);
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
 
     std::vector<double> data(N);
     data.reserve(N);
