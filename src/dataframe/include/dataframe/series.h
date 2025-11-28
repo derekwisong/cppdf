@@ -258,12 +258,33 @@ namespace df {
             return Series<DataType_>{*this}.add(other);            
         }
 
+        template <typename SeriesType_>
+        auto& operator+=(SeriesType_&& other) {
+            return add(std::forward<SeriesType_>(other));
+        }
+
+        // auto& operator+=(const DataType_& val) {
+        //     return add(val);
+        // }
+
+        // auto& operator+=(const Series<DataType_>& other) {
+        //     return add(other);
+        // }
+
         auto operator-(const DataType_& val) const {
             return Series<DataType_>{*this}.sub(val);            
         }
 
         auto operator-(const Series<DataType_>& other) const {
             return Series<DataType_>{*this}.sub(other);            
+        }
+
+        auto& operator-=(const DataType_& val) {
+            return sub(val);
+        }
+
+        auto& operator-=(const Series<DataType_>& other) {
+            return sub(other);
         }
 
         auto operator*(const DataType_& val) const {

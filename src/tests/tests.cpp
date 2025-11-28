@@ -40,6 +40,23 @@ namespace {
         EXPECT_EQ(s3[2], 9);
     }
 
+    TEST(SeriesTest, PlusEqualsScalar) {
+        Series<int> s1({1, 2, 3});
+        s1 += 4;
+        EXPECT_EQ(s1[0], 5);
+        EXPECT_EQ(s1[1], 6);
+        EXPECT_EQ(s1[2], 7);
+    }
+
+    TEST(SeriesTest, PlusEqualsSeries) {
+        Series<int> s1({1, 2, 3});
+        const Series<int> s2({4, 5, 6});
+        s1 += s2;
+        EXPECT_EQ(s1[0], 5);
+        EXPECT_EQ(s1[1], 7);
+        EXPECT_EQ(s1[2], 9);
+    }
+
     TEST(SeriesTests, SubtractScalar) {
         const Series<int> s1({10, 20, 30});
         const auto s2 = s1 - 5;
