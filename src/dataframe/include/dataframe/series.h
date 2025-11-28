@@ -248,6 +248,40 @@ namespace df {
            return std::move(*this);
         }
 
+        // Operators
+
+        auto operator+(const DataType_& val) const {
+            return Series<DataType_>{*this}.add(val);            
+        }
+
+        auto operator+(const Series<DataType_>& other) const {
+            return Series<DataType_>{*this}.add(other);            
+        }
+
+        auto operator-(const DataType_& val) const {
+            return Series<DataType_>{*this}.sub(val);            
+        }
+
+        auto operator-(const Series<DataType_>& other) const {
+            return Series<DataType_>{*this}.sub(other);            
+        }
+
+        auto operator*(const DataType_& val) const {
+            return Series<DataType_>{*this}.mul(val);            
+        }
+
+        auto operator*(const Series<DataType_>& other) const {
+            return Series<DataType_>{*this}.mul(other);            
+        }
+
+        auto operator/(const DataType_& val) const {
+            return Series<DataType_>{*this}.div(val);            
+        }
+
+        auto operator/(const Series<DataType_>& other) const {
+            return Series<DataType_>{*this}.div(other);            
+        }        
+
         // Aggregation functions
 
         DataType_ dot(const Series<DataType_>& other) const {
@@ -265,7 +299,9 @@ namespace df {
             if (size() == 0) {
                 return std::nullopt;
             }
-            return std::reduce(exec_, data_.begin(), data_.end(), DataType_{}, std::plus<>{});
+            return with_policy(exec_, [&](auto& exec_){
+                return std::reduce(exec_, data_.begin(), data_.end(), DataType_{}, std::plus<>{});
+            });
         }
 
         std::optional<DataType_> mean() const {
@@ -280,13 +316,15 @@ namespace df {
                 return std::nullopt;
             }
             const auto m = mean().value();
-            return std::transform_reduce(
-                exec_,
-                data_.begin(), data_.end(),
-                DataType_{},
-                std::plus<>(),
-                [&m](const auto& x) { return (x - m) * (x - m); }
-            ) / static_cast<DataType_>(size());
+            return with_policy(exec_, [&](auto& exec_){
+                return std::transform_reduce(
+                    exec_,
+                    data_.begin(), data_.end(),
+                    DataType_{},
+                    std::plus<>(),
+                    [&m](const auto& x) { return (x - m) * (x - m); }
+                ) / static_cast<DataType_>(size());
+            });
         }
 
         std::optional<DataType_> stddev() const {
@@ -398,4 +436,54 @@ namespace df {
             return *this;
         }
     };
+
+    // Non-member operators to support commutative operations
+
+    // Subtraction for val - series
+    template <typename DataType_>
+    auto operator-(const DataType_& val, const Series<DataType_>& series) {
+        return Series<DataType_>{series}.rsub(val);
+    }
+
+    // Subtraction for series - series
+    template <typename DataType_>
+    auto operator-(const Series<DataType_>& other, const Series<DataType_>& series) {
+        return Series<DataType_>{other}.sub(series);
+    }
+
+    // Adddition for val + series
+    template <typename DataType_>
+    auto operator+(const DataType_& val, const Series<DataType_>& series) {
+        return Series<DataType_>{series}.add(val);
+    }
+
+    // Addition for series + series
+    template <typename DataType_>
+    auto operator+(const Series<DataType_>& other, const Series<DataType_>& series) {
+        return Series<DataType_>{other}.add(series);
+    }
+
+    // Multiplication for val * series
+    template <typename DataType_>
+    auto operator*(const DataType_& val, const Series<DataType_>& series) {
+        return Series<DataType_>{series}.mul(val);
+    }
+
+    // Multiplication for series * series
+    template <typename DataType_>
+    auto operator*(const Series<DataType_>& other, const Series<DataType_>& series) {
+        return Series<DataType_>{other}.mul(series);
+    }
+
+    // Division for val / series
+    template <typename DataType_>
+    auto operator/(const DataType_& val, const Series<DataType_>& series) {
+        return Series<DataType_>{series}.rdiv(val);
+    }
+
+    // Division for series / series
+    template <typename DataType_>
+    auto operator/(const Series<DataType_>& other, const Series<DataType_>& series) {
+        return Series<DataType_>{other}.div(series);
+    }
 }
