@@ -5,13 +5,43 @@
 #include <execution>
 #include <vector>
 #include <iostream>
+#include <optional>
+
 
 namespace df {
+
+    enum class ExecPolicy {
+        SEQ,
+        PAR,
+        UNSEQ,
+        PAR_UNSEQ
+    };
+
+    /// Helper to execute a function with the appropriate execution policy
+    // policy: the execution policy to use
+    // f: the function to execute, which takes an execution policy as argument
+    template <class F>
+    decltype(auto) with_policy(ExecPolicy policy, F&& f) {
+        switch (policy) {
+        case ExecPolicy::SEQ:
+            return f(std::execution::seq);
+        case ExecPolicy::PAR:
+            return f(std::execution::par);
+        case ExecPolicy::PAR_UNSEQ:
+            return f(std::execution::par_unseq);
+        case ExecPolicy::UNSEQ:
+            return f(std::execution::unseq);
+        }
+
+        throw std::runtime_error("Unknown execution policy");
+    }
 
     template <typename DataType_>
     class Series {
     public:
         explicit Series(std::vector<DataType_> data): data_(std::move(data)) {}
+        explicit Series(std::initializer_list<DataType_> data): data_(std::move(data)) {}
+        Series(ExecPolicy policy, std::vector<DataType_> data): data_(std::move(data)), exec_(policy) {}
         Series() = default;
 
         std::size_t size() const { return data_.size(); }
@@ -221,57 +251,61 @@ namespace df {
         // Aggregation functions
 
         DataType_ dot(const Series<DataType_>& other) const {
-            DataType_ result{};
-            std::transform_reduce(
+            return std::transform_reduce(
                 exec_,
                 data_.begin(), data_.end(),
                 other.data_.begin(),
-                result,
+                DataType_{},
                 std::plus<>(),
                 std::multiplies<>()
             );
-            return result;
         }
 
-        DataType_ sum() const {
+        std::optional<DataType_> sum() const {
+            if (size() == 0) {
+                return std::nullopt;
+            }
             return std::reduce(exec_, data_.begin(), data_.end(), DataType_{}, std::plus<>{});
         }
 
-        DataType_ mean() const {
+        std::optional<DataType_> mean() const {
             if (size() == 0) {
-                throw std::runtime_error("Cannot compute mean of empty series");
+                return std::nullopt;
             }
-            return sum() / static_cast<DataType_>(size());
+            return sum().value() / static_cast<DataType_>(size());
         }
 
-        DataType_ variance() const {
+        std::optional<DataType_> variance() const {
             if (size() == 0) {
-                throw std::runtime_error("Cannot compute variance of empty series");
+                return std::nullopt;
             }
-            const auto m = mean();
+            const auto m = mean().value();
             return std::transform_reduce(
                 exec_,
                 data_.begin(), data_.end(),
                 DataType_{},
                 std::plus<>(),
-                [m](const auto& x) { return (x - m) * (x - m); }
+                [&m](const auto& x) { return (x - m) * (x - m); }
             ) / static_cast<DataType_>(size());
         }
 
-        DataType_ stddev() const {
-            return std::sqrt(variance());
+        std::optional<DataType_> stddev() const {
+            if (size() == 0) {
+                return std::nullopt;
+            }
+            return std::sqrt(variance().value());
         }
 
-        DataType_& min() const {
+        std::optional<std::reference_wrapper<DataType_>> min() const {
             if (size() == 0) {
-                throw std::runtime_error("Cannot compute min of empty series");
+                return std::nullopt;
             }
             return *std::min_element(exec_, data_.begin(), data_.end());
         }
 
-        DataType_& max() const {
+        std::optional<std::reference_wrapper<DataType_>> max() const {
             if (size() == 0) {
-                throw std::runtime_error("Cannot compute max of empty series");
+                return std::nullopt;
             }
             return *std::max_element(exec_, data_.begin(), data_.end());
         }
@@ -303,8 +337,23 @@ namespace df {
 
         }
 
+        // access operator
+        DataType_& operator[](std::size_t idx) {
+            return data_[idx];
+        }
+        const DataType_& operator[](std::size_t idx) const {
+            return data_[idx];
+        }
+
+        // iterator support for stl algorithms
+        auto begin() { return data_.begin(); }
+        auto end() { return data_.end(); }
+        auto begin() const { return data_.begin(); }
+        auto end() const { return data_.end(); }
+
+
     private:
-        static constexpr auto exec_ = std::execution::par_unseq;
+        ExecPolicy exec_{ExecPolicy::PAR_UNSEQ};
 
         // The underlying data storage
         std::vector<DataType_> data_;
@@ -322,7 +371,9 @@ namespace df {
         // functor: the monadic functor to apply: functor(this[i]) -> this[i]
         template <typename Func_>
         auto& transform_to(Series<DataType_>& output, Func_&& functor) {
-            std::transform(exec_, data_.begin(), data_.end(), output.data_.begin(), functor);
+            with_policy(exec_, [&](auto exec_){
+                std::transform(exec_, data_.begin(), data_.end(), output.data_.begin(), functor);
+            });
             return *this;
         }
 
@@ -341,7 +392,9 @@ namespace df {
         // functor: the dyadic functor to apply: functor(this[i], other[i]) -> output[i]
         template <typename Func_>
         auto& transform_to(const Series<DataType_>& other, Series<DataType_>& output, Func_&& functor) {
-            std::transform(exec_, data_.begin(), data_.end(), other.data_.begin(), output.data_.begin(), functor);
+            with_policy(exec_, [&](auto& exc){
+                std::transform(exc, data_.begin(), data_.end(), other.data_.begin(), output.data_.begin(), functor);
+            });
             return *this;
         }
     };

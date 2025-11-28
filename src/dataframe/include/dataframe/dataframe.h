@@ -62,10 +62,14 @@ namespace df {
                 throw std::invalid_argument("Cannot add column with inconsistent length");
             }
 
-            cols_.emplace(
+            auto [pair, inserted] = cols_.emplace(
                 std::move(name),
                 std::make_shared<WrappedSeries<T>>(std::move(series))
             );
+
+            if (inserted) {
+                col_order_.emplace_back(pair->first);
+            }
         }
 
         template <typename T>
@@ -82,10 +86,12 @@ namespace df {
 
             return wrapped->impl();
         }
+
+        friend std::ostream& operator<<(std::ostream& os, const DataFrame& df);
     
     private:
-    
         std::unordered_map<std::string, SeriesPtr> cols_;
+        std::vector<std::string> col_order_;
     };
 
 }
