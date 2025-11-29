@@ -4,28 +4,21 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-#include <random>
 #include <execution>
 #include <benchmark/benchmark.h>
+#include "rng.h"
 
 
 namespace {
     using namespace df;
-    std::random_device rd;
+    constexpr auto NUM_CALCS{1'000'000'000};
 
-    constexpr auto NUM_CALCS{1'000'000};
-
-    template<typename T>
+	template<typename T>
     Series<T> generate_random_series(std::size_t N) {
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        auto vec = bench::generate_random_series<T>(N);
+        return Series<T>(std::move(vec));
+	}
 
-        std::vector<T> series;
-        series.reserve(N);
-        std::generate_n(std::back_inserter(series), N, [&]() { return dist(gen); });
-
-        return Series<T>(ExecPolicy::PAR_UNSEQ, std::move(series));
-    }
 
     void calc1_loop(benchmark::State& state) {
         auto c1 = generate_random_series<double>(NUM_CALCS);
