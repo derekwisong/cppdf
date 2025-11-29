@@ -11,19 +11,16 @@
 
 namespace {
     using namespace df;
-    constexpr auto NUM_CALCS{1'000'000'000};
+    constexpr auto NUM_CALCS{1'000'000};
 
 	template<typename T>
     Series<T> generate_random_series(std::size_t N) {
-        auto vec = bench::generate_random_series<T>(N);
-        return Series<T>(std::move(vec));
+        return Series<T>(bench::generate_random_mt<T>(N));
 	}
-
 
     void calc1_loop(benchmark::State& state) {
         auto c1 = generate_random_series<double>(NUM_CALCS);
-        const std::array<double, 3> c2({0.98, 1.0, 0.9});
-
+        constexpr std::array<double, 3> c2({0.98, 1.0, 0.9});
         for (auto _ : state) {
             std::transform(
                 std::execution::par_unseq,
@@ -38,7 +35,7 @@ namespace {
 
     void calc1_series(benchmark::State& state) {
         auto c1 = generate_random_series<double>(NUM_CALCS);
-        const std::array<double, 3> c2({0.98, 1.0, 0.9});
+        constexpr std::array<double, 3> c2({0.98, 1.0, 0.9});
         for (auto _ : state) {
             c1.mul(c2[1]).add(c2[0]).exp().add(c2[2]);
         }
