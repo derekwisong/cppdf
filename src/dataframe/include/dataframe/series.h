@@ -48,71 +48,88 @@ namespace df {
 
         // lvalue operations (ops on named values)
 
-        auto& add(const DataType_& val) & {
+        template <typename T>
+        auto& add(const T& val) & {
             return transform([val](const auto& x) { return val + x; });
         }
 
-        auto& add(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& add(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return x + o; });
         }
 
-        auto& sub(const DataType_& val) & {
+        template <typename T>
+        auto& sub(const T& val) & {
             return transform([val](const auto& x) { return x - val; });
         }
 
-        auto& sub(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& sub(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return x - o; });
         }
 
-        auto& rsub(const DataType_& val) & {
+        template <typename T>
+        auto& rsub(const T& val) & {
             return transform([val](const auto& x) { return val - x; });
         }
 
-        auto& rsub(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& rsub(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return o - x; });
         }
 
-        auto& mul(const DataType_& val) & {
+        template <typename T>
+        auto& mul(const T& val) & {
             return transform([val](const auto& x) { return x * val; });
         }
 
-        auto& mul(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& mul(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return x * o; });
         }
 
-        auto& div(const DataType_& val) & {
+        template <typename T>
+        auto& div(const T& val) & {
             return transform([val](const auto& x) { return x / val; });
         }
 
-        auto& rdiv(const DataType_& val) & {
+        template <typename T>
+        auto& rdiv(const T& val) & {
             return transform([val](const auto& x) { return val / x; });
         }
 
-        auto& rdiv(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& rdiv(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return o / x; });
         }
         
-        auto& pow(const DataType_& val) & {
+        template <typename T>
+        auto& pow(const T& val) & {
             return transform([val](const auto& x) { return std::pow(x, val); });
         }
 
-        auto& pow(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& pow(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return std::pow(x, o); });
         }
 
-        auto& min(const DataType_& val) & {
+        template <typename T>
+        auto& min(const T& val) & {
             return transform([val](const auto& x) { return std::min(x, val); });
         }
 
-        auto& min(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& min(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return std::min(x, o); });
         }
 
-        auto& max(const DataType_& val) & {
+        template <typename T>
+        auto& max(const T& val) & {
             return transform([val](const auto& x) { return std::max(x, val); });
         }
 
-        auto& max(const Series<DataType_>& other) & {
+        template <typename T>
+        auto& max(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return std::max(x, o); });
         }
 
@@ -138,87 +155,104 @@ namespace df {
 
         // rvalue overloads (ops on temporary values)
 
-        auto&& add(const DataType_& val) && {
+        template <typename T>
+        auto&& add(const T& val) && {
            add(val);
            return std::move(*this);
         }
 
-        auto&& add(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& add(const Series<T>& other) && {
            add(other);
            return std::move(*this);
         }
 
-        auto&& sub(const DataType_& val) && {
+        template <typename T>
+        auto&& sub(const T& val) && {
            sub(val);
            return std::move(*this);
         }
 
-        auto&& sub(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& sub(const Series<T>& other) && {
            sub(other);
            return std::move(*this);
         }
 
-        auto&& rsub(const DataType_& val) && {
+        template <typename T>
+        auto&& rsub(const T& val) && {
            rsub(val);
            return std::move(*this);
         }
 
-        auto&& rsub(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& rsub(const Series<T>& other) && {
            rsub(other);
            return std::move(*this);
         }
 
-        auto&& mul(const DataType_& val) && {
+        template <typename T>
+        auto&& mul(const T& val) && {
            mul(val);
            return std::move(*this);
         }
 
-        auto&& mul(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& mul(const Series<T>& other) && {
            mul(other);
            return std::move(*this);
         }
 
-        auto&& div(const DataType_& val) && {
+        template <typename T>
+        auto&& div(const T& val) && {
            div(val);
            return std::move(*this);
         }
 
-        auto&& rdiv(const DataType_& val) && {
+        template <typename T>
+        auto&& rdiv(const T& val) && {
            rdiv(val);
            return std::move(*this);
         }
 
-        auto&& rdiv(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& rdiv(const Series<T>& other) && {
            rdiv(other);
            return std::move(*this);
         }
 
-        auto&& pow(const DataType_& val) && {
+        template <typename T>
+        auto&& pow(const T& val) && {
            pow(val);
            return std::move(*this);
         }
 
-        auto&& pow(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& pow(const Series<T>& other) && {
            pow(other);
            return std::move(*this);
         }
 
-        auto&& min(const DataType_& val) && {
+        template <typename T>
+        auto&& min(const T& val) && {
            min(val);
            return std::move(*this);
         }
 
-        auto&& min(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& min(const Series<T>& other) && {
            min(other);
            return std::move(*this);
         }
 
-        auto&& max(const DataType_& val) && {
+        template <typename T>
+        auto&& max(const T& val) && {
            max(val);
            return std::move(*this);
         }
 
-        auto&& max(const Series<DataType_>& other) && {
+        template <typename T>
+        auto&& max(const Series<T>& other) && {
            max(other);
            return std::move(*this);
         }
@@ -250,58 +284,81 @@ namespace df {
 
         // Operators
 
-        auto operator+(const DataType_& val) const {
-            return Series<DataType_>{*this}.add(val);            
+        template <typename LhsT, typename RhsT>
+        friend auto operator+(const Series<LhsT>& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator+(const Series<LhsT>& lhs, const RhsT& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator+(const LhsT& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator-(const Series<LhsT>& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator-(const Series<LhsT>& lhs, const RhsT& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator-(const LhsT& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator*(const Series<LhsT>& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator*(const Series<LhsT>& lhs, const RhsT& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator*(const LhsT& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator/(const Series<LhsT>& lhs, const Series<RhsT>& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator/(const Series<LhsT>& lhs, const RhsT& rhs);
+
+        template <typename LhsT, typename RhsT>
+        friend auto operator/(const LhsT& lhs, const Series<RhsT>& rhs);
+
+        template <typename T>
+        auto& operator+=(const T& val) {
+            return add(val);
         }
 
-        auto operator+(const Series<DataType_>& other) const {
-            return Series<DataType_>{*this}.add(other);            
+        template <typename T>
+        auto& operator+=(const Series<T>& other) {
+            return add(other);
         }
 
-        template <typename SeriesType_>
-        auto& operator+=(SeriesType_&& other) {
-            return add(std::forward<SeriesType_>(other));
-        }
-
-        // auto& operator+=(const DataType_& val) {
-        //     return add(val);
-        // }
-
-        // auto& operator+=(const Series<DataType_>& other) {
-        //     return add(other);
-        // }
-
-        auto operator-(const DataType_& val) const {
-            return Series<DataType_>{*this}.sub(val);            
-        }
-
-        auto operator-(const Series<DataType_>& other) const {
-            return Series<DataType_>{*this}.sub(other);            
-        }
-
-        auto& operator-=(const DataType_& val) {
+        template <typename T>
+        auto& operator-=(const T& val) {
             return sub(val);
         }
 
-        auto& operator-=(const Series<DataType_>& other) {
+        template <typename T>
+        auto& operator-=(const Series<T>& other) {
             return sub(other);
         }
 
-        auto operator*(const DataType_& val) const {
-            return Series<DataType_>{*this}.mul(val);            
+        template <typename T>
+        auto& operator*=(const T& val) {
+            return mul(val);
         }
 
-        auto operator*(const Series<DataType_>& other) const {
-            return Series<DataType_>{*this}.mul(other);            
+        template <typename T>
+        auto& operator*=(const Series<T>& other) {
+            return mul(other);
         }
 
-        auto operator/(const DataType_& val) const {
-            return Series<DataType_>{*this}.div(val);            
+        template <typename T>
+        auto& operator/=(const T& val) {
+            return div(val);
         }
 
-        auto operator/(const Series<DataType_>& other) const {
-            return Series<DataType_>{*this}.div(other);            
-        }        
+        template <typename T>
+        auto& operator/=(const Series<T>& other) {
+            return div(other);
+        }
 
         // Aggregation functions
 
@@ -458,53 +515,87 @@ namespace df {
         }
     };
 
-    // Non-member operators to support commutative operations
-
-    // Subtraction for val - series
-    template <typename DataType_>
-    auto operator-(const DataType_& val, const Series<DataType_>& series) {
-        return Series<DataType_>{series}.rsub(val);
+    template <typename LhsT, typename RhsT>
+    auto operator+(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
+        auto copy{lhs};
+        copy.add(rhs);
+        return copy;
     }
 
-    // Subtraction for series - series
-    template <typename DataType_>
-    auto operator-(const Series<DataType_>& other, const Series<DataType_>& series) {
-        return Series<DataType_>{other}.sub(series);
+    template <typename LhsT, typename RhsT>
+    auto operator+(const Series<LhsT>& lhs, const RhsT& rhs) {
+        auto copy{lhs};
+        copy.add(rhs);
+        return copy;
     }
 
-    // Adddition for val + series
-    template <typename DataType_>
-    auto operator+(const DataType_& val, const Series<DataType_>& series) {
-        return Series<DataType_>{series}.add(val);
+    template <typename LhsT, typename RhsT>
+    auto operator+(const LhsT& lhs, const Series<RhsT>& rhs) {{
+        auto copy{rhs};
+        copy.add(lhs);
+        return copy;
+    }}
+
+    template <typename LhsT, typename RhsT>
+    auto operator-(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
+        auto copy{lhs};
+        copy.sub(rhs);
+        return copy;
     }
 
-    // Addition for series + series
-    template <typename DataType_>
-    auto operator+(const Series<DataType_>& other, const Series<DataType_>& series) {
-        return Series<DataType_>{other}.add(series);
+    template <typename LhsT, typename RhsT>
+    auto operator-(const Series<LhsT>& lhs, const RhsT& rhs) {
+        auto copy{lhs};
+        copy.sub(rhs);
+        return copy;
     }
 
-    // Multiplication for val * series
-    template <typename DataType_>
-    auto operator*(const DataType_& val, const Series<DataType_>& series) {
-        return Series<DataType_>{series}.mul(val);
+    template <typename LhsT, typename RhsT>
+    auto operator-(const LhsT& lhs, const Series<RhsT>& rhs) {
+        auto copy{rhs};
+        copy.rsub(lhs);
+        return copy;
     }
 
-    // Multiplication for series * series
-    template <typename DataType_>
-    auto operator*(const Series<DataType_>& other, const Series<DataType_>& series) {
-        return Series<DataType_>{other}.mul(series);
+    template <typename LhsT, typename RhsT>
+    auto operator*(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
+        auto copy{lhs};
+        copy.mul(rhs);
+        return copy;
     }
 
-    // Division for val / series
-    template <typename DataType_>
-    auto operator/(const DataType_& val, const Series<DataType_>& series) {
-        return Series<DataType_>{series}.rdiv(val);
+    template <typename LhsT, typename RhsT>
+    auto operator*(const Series<LhsT>& lhs, const RhsT& rhs) {
+        auto copy{lhs};
+        copy.mul(rhs);
+        return copy;
     }
 
-    // Division for series / series
-    template <typename DataType_>
-    auto operator/(const Series<DataType_>& other, const Series<DataType_>& series) {
-        return Series<DataType_>{other}.div(series);
+    template <typename LhsT, typename RhsT>
+    auto operator*(const LhsT& lhs, const Series<RhsT>& rhs) {
+        auto copy{rhs};
+        copy.mul(lhs);
+        return copy;
+    }
+
+    template <typename LhsT, typename RhsT>
+    auto operator/(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
+        auto copy{lhs};
+        copy.div(rhs);
+        return copy;
+    }
+
+    template <typename LhsT, typename RhsT>
+    auto operator/(const Series<LhsT>& lhs, const RhsT& rhs) {
+        auto copy{lhs};
+        copy.div(rhs);
+        return copy;
+    }
+
+    template <typename LhsT, typename RhsT>
+    auto operator/(const LhsT& lhs, const Series<RhsT>& rhs) {
+        auto copy{rhs};
+        copy.rdiv(lhs);
+        return copy;
     }
 }
