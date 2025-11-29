@@ -16,4 +16,6 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG        v1.17.0
 )
+# On Windows make gtest use the same (dynamic) CRT as the project
+set(gtest_force_shared_crt ON CACHE BOOL "Use shared CRT" FORCE)
 FetchContent_MakeAvailable(googletest)

@@ -1,5 +1,6 @@
 #include "df.h"
 
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -23,7 +24,7 @@ namespace {
         series.reserve(N);
         std::generate_n(std::back_inserter(series), N, [&]() { return dist(gen); });
 
-        return Series<T>(ExecPolicy::UNSEQ, std::move(series));
+        return Series<T>(ExecPolicy::PAR_UNSEQ, std::move(series));
     }
 
     void calc1_loop(benchmark::State& state) {
@@ -32,7 +33,7 @@ namespace {
 
         for (auto _ : state) {
             std::transform(
-                std::execution::unseq,
+                std::execution::par_unseq,
                 c1.begin(),
                 c1.end(),
                 c1.begin(),
