@@ -47,6 +47,11 @@ namespace df {
     template <typename DataType_>
     class Series {
     public:
+        using value_type = DataType_;
+        using container_type = std::vector<DataType_>;
+        using iterator = typename container_type::iterator;
+        using const_iterator = typename container_type::const_iterator;
+
         // Construct a Series by applying a monadic functor to an input Series
         template <typename T, typename Func>
         Series(const Series<T>& other, Func&& func) : data_(other.size()) {
@@ -67,8 +72,6 @@ namespace df {
         explicit Series(std::initializer_list<DataType_> data): data_(std::move(data)) {}
         Series(ExecPolicy policy, std::vector<DataType_> data): data_(std::move(data)), exec_(policy) {}
         Series() = default;
-
-        std::size_t size() const { return data_.size(); }
 
         // lvalue operations (ops on named values)
 
@@ -391,34 +394,46 @@ namespace df {
 
         // Aggregation functions
 
-        DataType_ dot(const Series<DataType_>& other) const {
+        // Dot product of this series with another
+        // Will return the identity element (0) if empty
+        template <typename T, typename J=DataType_>
+        J dot(const Series<T>& other) const {
             return std::transform_reduce(
                 exec_,
                 data_.begin(), data_.end(),
                 other.data_.begin(),
-                DataType_{},
+                J{},
                 std::plus<>(),
                 std::multiplies<>()
             );
         }
 
-        std::optional<DataType_> sum() const {
+        // Sum of all elements in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<T> sum() const {
             if (size() == 0) {
                 return std::nullopt;
             }
             return with_policy(exec_, [&](auto& exec_){
-                return std::reduce(exec_, data_.begin(), data_.end(), DataType_{}, std::plus<>{});
+                return std::reduce(exec_, data_.begin(), data_.end(), T{}, std::plus<>{});
             });
         }
 
-        std::optional<DataType_> mean() const {
+        // Mean of all elements in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<T> mean() const {
             if (size() == 0) {
                 return std::nullopt;
             }
-            return sum().value() / static_cast<DataType_>(size());
+            return sum().value() / static_cast<T>(size());
         }
 
-        std::optional<DataType_> variance() const {
+        // Variance of all elements in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<T> variance() const {
             if (size() == 0) {
                 return std::nullopt;
             }
@@ -427,28 +442,37 @@ namespace df {
                 return std::transform_reduce(
                     exec_,
                     data_.begin(), data_.end(),
-                    DataType_{},
+                    T{},
                     std::plus<>(),
                     [&m](const auto& x) { return (x - m) * (x - m); }
-                ) / static_cast<DataType_>(size());
+                ) / static_cast<T>(size());
             });
         }
 
-        std::optional<DataType_> stddev() const {
+        // Standard deviation of all elements in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<T> stddev() const {
             if (size() == 0) {
                 return std::nullopt;
             }
             return std::sqrt(variance().value());
         }
 
-        std::optional<std::reference_wrapper<DataType_>> min() const {
+        // Minimum element in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<std::reference_wrapper<T>> min() const {
             if (size() == 0) {
                 return std::nullopt;
             }
             return *std::min_element(exec_, data_.begin(), data_.end());
         }
 
-        std::optional<std::reference_wrapper<DataType_>> max() const {
+        // Maximum element in the series
+        // Returns std::nullopt if the series is empty
+        template <typename T = DataType_>
+        std::optional<std::reference_wrapper<T>> max() const {
             if (size() == 0) {
                 return std::nullopt;
             }
@@ -482,19 +506,37 @@ namespace df {
 
         }
 
-        // access operator
+        ExecPolicy exec_policy() const { return exec_; }
+        void set_exec_policy(ExecPolicy policy) { exec_ = policy; }
+
+        iterator begin() noexcept { return data_.begin(); }
+        iterator end() noexcept { return data_.end(); }
+        const_iterator begin() const noexcept { return data_.begin(); }
+        const_iterator end() const noexcept { return data_.end(); }
+
+        std::size_t size() const { return data_.size(); }
+        void reserve(std::size_t n) { data_.reserve(n); }
+        void resize(std::size_t n) { data_.resize(n); }
+
+        // Get element at the index without bounds checking
         DataType_& operator[](std::size_t idx) {
             return data_[idx];
         }
+
+        // Get element at the index without bounds checking
         const DataType_& operator[](std::size_t idx) const {
             return data_[idx];
         }
 
-        // iterator support for stl algorithms
-        auto begin() { return data_.begin(); }
-        auto end() { return data_.end(); }
-        auto begin() const { return data_.begin(); }
-        auto end() const { return data_.end(); }
+        // Get element at the index with bounds checking
+        DataType_& at(std::size_t idx) {
+            return data_.at(idx);
+        }
+
+        // Get element at the index with bounds checking
+        const DataType_& at(std::size_t idx) const {
+            return data_.at(idx);
+        }
 
 
     private:
