@@ -58,6 +58,15 @@ namespace {
     }
     BENCHMARK(add_series);
 
+    void add_series_operator(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            auto c2 = c1 + c1;
+            benchmark::DoNotOptimize(c2);
+        }
+    }
+    BENCHMARK(add_series_operator);
+
     void mul_scalar(benchmark::State& state) {
         auto c1 = generate_random_series(NUM_CALCS);
         const auto val = c1[0];
@@ -74,6 +83,15 @@ namespace {
         }
     }
     BENCHMARK(mul_series);
+
+    void mul_series_operator(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            auto c2 = c1 * c1;
+            benchmark::DoNotOptimize(c2);
+        }
+    }
+    BENCHMARK(mul_series_operator);
 
     void sqrt_series(benchmark::State& state) {
         auto c1 = generate_random_series(NUM_CALCS);

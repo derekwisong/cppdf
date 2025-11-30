@@ -11,7 +11,7 @@ namespace {
         ASSERT_EQ(s1[4], 5);
     }
 
-    TEST(SeriesTests, AddScalar) {
+    TEST(SeriesTests, AddScalarInplace) {
         Series<int> s1({1, 2, 3});
         s1.add(5);
         EXPECT_EQ(s1[0], 6);
@@ -33,8 +33,7 @@ namespace {
 
     TEST(SeriesTests, AddSeriesOperatorOverload) {
         const Series<int> s1({1, 2, 3});
-        const Series<int> s2({4, 5, 6});
-        const auto s3 = s1 + s2;
+        const auto s3 = s1 + Series<int>({4, 5, 6});
         EXPECT_EQ(s3[0], 5);
         EXPECT_EQ(s3[1], 7);
         EXPECT_EQ(s3[2], 9);
@@ -50,14 +49,13 @@ namespace {
 
     TEST(SeriesTest, PlusEqualsSeries) {
         Series<int> s1({1, 2, 3});
-        const Series<int> s2({4, 5, 6});
-        s1 += s2;
+        s1 += Series<int>({4, 5, 6});
         EXPECT_EQ(s1[0], 5);
         EXPECT_EQ(s1[1], 7);
         EXPECT_EQ(s1[2], 9);
     }
 
-    TEST(SeriesTests, SubtractScalar) {
+    TEST(SeriesTests, SubtractScalarOperatorOverload) {
         const Series<int> s1({10, 20, 30});
         const auto s2 = s1 - 5;
         EXPECT_EQ(s2[0], 5);
@@ -69,7 +67,7 @@ namespace {
         EXPECT_EQ(s3[2], -25);
     }
 
-    TEST(SeriesTests, SubtractSeries) {
+    TEST(SeriesTests, SubtractSeriesOperatorOverload) {
         const Series<int> s1({10, 20, 30});
         const Series<int> s2({1, 2, 3});
         const auto s3 = s1 - s2;
@@ -82,12 +80,42 @@ namespace {
         EXPECT_EQ(s4[2], -27);
     }
 
-    TEST(SeriesTests, MultiplySeriesInplace) {
-        Series<double> s1({1, 2, 3});
+    TEST(SeriesTests, MultiplyInplaceScalar) {
+        Series<int> s1({1, 2, 3});
         s1.mul(7);
         EXPECT_EQ(s1[0], 7);
         EXPECT_EQ(s1[1], 14);
         EXPECT_EQ(s1[2], 21);
+    }
+
+    TEST(SeriesTest, DivideInplaceScalar) {
+        Series<double> s1({5.0, 10.0, 20.0, 30.0});
+        s1.div(10);
+        EXPECT_DOUBLE_EQ(s1[0], 0.5);
+        EXPECT_DOUBLE_EQ(s1[1], 1.0);
+        EXPECT_DOUBLE_EQ(s1[2], 2.0);
+        EXPECT_DOUBLE_EQ(s1[3], 3.0);
+    }
+
+    TEST(SeriesTests, DivideInplaceSeries) {
+        Series<double> s1({10.0, 20.0, 30.0});
+        Series<double> s2({2.0, 4.0, 2.5});
+        s1.div(s2);
+        EXPECT_DOUBLE_EQ(s1[0], 5.0);
+        EXPECT_DOUBLE_EQ(s1[1], 5.0);
+        EXPECT_DOUBLE_EQ(s1[2], 12.0);
+    }
+
+    TEST(SeriesTests, DivideScalarOperatorOverload) {
+        const Series<double> s1({10.0, 20.0, 30.0});
+        const auto s2 = s1 / 10.0;
+        EXPECT_DOUBLE_EQ(s2[0], 1.0);
+        EXPECT_DOUBLE_EQ(s2[1], 2.0);
+        EXPECT_DOUBLE_EQ(s2[2], 3.0);
+        const auto s3 = 60.0 / s1;
+        EXPECT_DOUBLE_EQ(s3[0], 6.0);
+        EXPECT_DOUBLE_EQ(s3[1], 3.0);
+        EXPECT_DOUBLE_EQ(s3[2], 2.0);
     }
 
     TEST(SeriesTests, MeanCalculation) {

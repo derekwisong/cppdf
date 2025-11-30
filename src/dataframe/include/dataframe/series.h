@@ -47,13 +47,19 @@ namespace df {
     template <typename DataType_>
     class Series {
     public:
+        // Construct a Series by applying a monadic functor to an input Series
         template <typename T, typename Func>
         Series(const Series<T>& other, Func&& func) : data_(other.size()) {
             other.transform_to(*this, std::forward<Func>(func));
         }
         
+        // Construct a Series by applying a dyadic functor to two input Series
         template <typename T, typename J, typename Func>
-        Series(const Series<T>& lhs, const Series<J>& rhs, Func&& func) : data_(lhs.size()) {
+        Series(const Series<T>& lhs, const Series<J>& rhs, Func&& func)  {
+            if (lhs.size() != rhs.size()) {
+                throw std::invalid_argument("Series sizes do not match for dyadic operation");
+            }
+            data_.resize(lhs.size());
             lhs.transform_to(rhs, *this, std::forward<Func>(func));
         }
 
@@ -104,6 +110,11 @@ namespace df {
         template <typename T>
         auto& mul(const Series<T>& other) & {
             return transform(other, [](const auto& x, const auto& o) { return x * o; });
+        }
+
+        template <typename T>
+        auto& div(const Series<T>& other) & {
+            return transform(other, [](const auto& x, const auto& o) { return x / o; });
         }
 
         template <typename T>
@@ -532,6 +543,8 @@ namespace df {
             return *this;
         }
     };
+
+    // Operators that return new Series constructed from transformations
 
     template <typename LhsT, typename RhsT>
     auto operator+(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
