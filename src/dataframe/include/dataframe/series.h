@@ -1,7 +1,9 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <execution>
 #include <vector>
 #include <iostream>
@@ -16,6 +18,11 @@ namespace df {
         UNSEQ,
         PAR_UNSEQ
     };
+
+    [[noreturn]] inline void unreachable_policy() noexcept {
+        assert(false && "Unknown ExecPolicy"); // in debug
+        std::abort();                          // hard-stop in release
+    }
 
     /// Helper to execute a function with the appropriate execution policy
     // policy: the execution policy to use
@@ -33,12 +40,23 @@ namespace df {
             return f(std::execution::unseq);
         }
 
-        throw std::runtime_error("Unknown execution policy");
+        // should not reach here, but assert/abort to be safe
+        unreachable_policy();
     }
 
     template <typename DataType_>
     class Series {
     public:
+        template <typename T, typename Func>
+        Series(const Series<T>& other, Func&& func) : data_(other.size()) {
+            other.transform_to(*this, std::forward<Func>(func));
+        }
+        
+        template <typename T, typename J, typename Func>
+        Series(const Series<T>& lhs, const Series<J>& rhs, Func&& func) : data_(lhs.size()) {
+            lhs.transform_to(rhs, *this, std::forward<Func>(func));
+        }
+
         explicit Series(std::vector<DataType_> data): data_(std::move(data)) {}
         explicit Series(std::initializer_list<DataType_> data): data_(std::move(data)) {}
         Series(ExecPolicy policy, std::vector<DataType_> data): data_(std::move(data)), exec_(policy) {}
@@ -485,8 +503,8 @@ namespace df {
         // Transform the output with the result of a monadic functor applied to this series elementwise
         // output: the series which receives the output
         // functor: the monadic functor to apply: functor(this[i]) -> this[i]
-        template <typename Func_>
-        auto& transform_to(Series<DataType_>& output, Func_&& functor) {
+        template <typename T, typename Func_>
+        auto& transform_to(Series<T>& output, Func_&& functor) const {
             with_policy(exec_, [&](auto exec_){
                 std::transform(exec_, data_.begin(), data_.end(), output.data_.begin(), functor);
             });
@@ -506,8 +524,8 @@ namespace df {
         // other: the other series the functor receives elements from
         // output: the series which receives the output
         // functor: the dyadic functor to apply: functor(this[i], other[i]) -> output[i]
-        template <typename Func_>
-        auto& transform_to(const Series<DataType_>& other, Series<DataType_>& output, Func_&& functor) {
+        template <typename T, typename J, typename Func_>
+        auto& transform_to(const Series<T>& other, Series<J>& output, Func_&& functor) const {
             with_policy(exec_, [&](auto& exc){
                 std::transform(exc, data_.begin(), data_.end(), other.data_.begin(), output.data_.begin(), functor);
             });
@@ -517,85 +535,61 @@ namespace df {
 
     template <typename LhsT, typename RhsT>
     auto operator+(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
-        auto copy{lhs};
-        copy.add(rhs);
-        return copy;
+        return Series<decltype(LhsT{} + RhsT{})>(lhs, rhs, [](const auto& x, const auto& y) { return x + y; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator+(const Series<LhsT>& lhs, const RhsT& rhs) {
-        auto copy{lhs};
-        copy.add(rhs);
-        return copy;
+        return Series<decltype(LhsT{} + RhsT{})>(lhs, [rhs](const auto& x) { return x + rhs; });
     }
 
     template <typename LhsT, typename RhsT>
-    auto operator+(const LhsT& lhs, const Series<RhsT>& rhs) {{
-        auto copy{rhs};
-        copy.add(lhs);
-        return copy;
-    }}
+    auto operator+(const LhsT& lhs, const Series<RhsT>& rhs) {
+        return Series<decltype(LhsT{} + RhsT{})>(rhs, [lhs](const auto& x) { return lhs + x; });
+    }
 
     template <typename LhsT, typename RhsT>
     auto operator-(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
-        auto copy{lhs};
-        copy.sub(rhs);
-        return copy;
+        return Series<decltype(LhsT{} - RhsT{})>(lhs, rhs, [](const auto& x, const auto& y) { return x - y; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator-(const Series<LhsT>& lhs, const RhsT& rhs) {
-        auto copy{lhs};
-        copy.sub(rhs);
-        return copy;
+        return Series<decltype(LhsT{} - RhsT{})>(lhs, [rhs](const auto& x) { return x - rhs; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator-(const LhsT& lhs, const Series<RhsT>& rhs) {
-        auto copy{rhs};
-        copy.rsub(lhs);
-        return copy;
+        return Series<decltype(LhsT{} - RhsT{})>(rhs, [lhs](const auto& x) { return lhs - x; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator*(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
-        auto copy{lhs};
-        copy.mul(rhs);
-        return copy;
+        return Series<decltype(LhsT{} * RhsT{})>(lhs, rhs, [](const auto& x, const auto& y) { return x * y; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator*(const Series<LhsT>& lhs, const RhsT& rhs) {
-        auto copy{lhs};
-        copy.mul(rhs);
-        return copy;
+        return Series<decltype(LhsT{} * RhsT{})>(lhs, [rhs](const auto& x) { return x * rhs; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator*(const LhsT& lhs, const Series<RhsT>& rhs) {
-        auto copy{rhs};
-        copy.mul(lhs);
-        return copy;
+        return Series<decltype(LhsT{} * RhsT{})>(rhs, [lhs](const auto& x) { return lhs * x; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator/(const Series<LhsT>& lhs, const Series<RhsT>& rhs) {
-        auto copy{lhs};
-        copy.div(rhs);
-        return copy;
+        return Series<decltype(LhsT{} / RhsT{})>(lhs, rhs, [](const auto& x, const auto& y) { return x / y; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator/(const Series<LhsT>& lhs, const RhsT& rhs) {
-        auto copy{lhs};
-        copy.div(rhs);
-        return copy;
+        return Series<decltype(LhsT{} / RhsT{})>(lhs, [rhs](const auto& x) { return x / rhs; });
     }
 
     template <typename LhsT, typename RhsT>
     auto operator/(const LhsT& lhs, const Series<RhsT>& rhs) {
-        auto copy{rhs};
-        copy.rdiv(lhs);
-        return copy;
+        return Series<decltype(LhsT{} / RhsT{})>(rhs, [lhs](const auto& x) { return lhs / x; });
     }
 }
