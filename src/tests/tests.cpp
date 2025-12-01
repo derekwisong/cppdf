@@ -125,6 +125,89 @@ namespace {
         ASSERT_DOUBLE_EQ(mean.value(), 3.0);
     }
 
+    TEST(SeriesTests, AllNullMeanIsUndefined) {
+        Series<double> s1({1.2, 2.3, 3.4});
+        s1.set_null(0);
+        s1.set_null(1);
+        s1.set_null(2);
+        EXPECT_EQ(s1.mean(), std::nullopt) << "Expect mean of all null series to be undefined";
+    }
+
+    TEST(SeriesTests, MeanIgnoresNulls) {
+        Series<double> s1({1.0, 2.0, 3.0, 4.0, 5.0});
+        s1.set_null(1); // set second element to null
+        s1.set_null(3); // set fourth element to null
+        const auto mean = s1.mean();
+        ASSERT_TRUE(mean.has_value());
+        ASSERT_DOUBLE_EQ(mean.value(), 3.0); // (1 + 3 + 5) / 3 = 3.0
+    }
+
+    TEST(SeriesTests, SumIgnoresNulls) {
+        Series<double> s1({1.0, 2.0, 3.0, 4.0, 5.0});
+        s1.set_null(0); // set first element to null
+        s1.set_null(4); // set last element to null
+        const auto sum = s1.sum();
+        ASSERT_TRUE(sum.has_value());
+        ASSERT_DOUBLE_EQ(sum.value(), 9.0); // 2 + 3 + 4 = 9.0
+    }
+
+    TEST(SeriesTests, VarianceIgnoresNulls) {
+        Series<double> s1({2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0});
+        s1.set_null(2); // set one element to null
+        const auto var = s1.variance();
+        ASSERT_TRUE(var.has_value());
+        ASSERT_DOUBLE_EQ(var.value(), 4.0); // variance should be 4.0 ignoring the null
+    }
+
+    TEST(SeriesTests, StandardDeviationIgnoresNulls) {
+        Series<double> s1({2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0});
+        s1.set_null(5); // set one element to null
+        const auto stddev = s1.stddev();
+        ASSERT_TRUE(stddev.has_value());
+        ASSERT_DOUBLE_EQ(stddev.value(), 2.0); // stddev should be 2.0 ignoring the null
+    }
+
+    TEST(SeriesTests, AllNullSumIsUndefined) {
+        Series<double> s1({1.2, 2.3, 3.4});
+        s1.set_null(0);
+        s1.set_null(1);
+        s1.set_null(2);
+        EXPECT_EQ(s1.sum(), std::nullopt) << "Expect sum of all null series to be undefined";
+    }
+
+    TEST(SeriesTests, AllNullVarianceIsUndefined) {
+        Series<double> s1({1.2, 2.3, 3.4});
+        s1.set_null(0);
+        s1.set_null(1);
+        s1.set_null(2);
+        EXPECT_EQ(s1.variance(), std::nullopt) << "Expect variance of all null series to be undefined";
+    }
+
+    TEST(SeriesTests, AllNullStdDevIsUndefined) {
+        Series<double> s1({1.2, 2.3, 3.4});
+        s1.set_null(0);
+        s1.set_null(1);
+        s1.set_null(2);
+        EXPECT_EQ(s1.stddev(), std::nullopt) << "Expect stddev of all null series to be undefined";
+    }
+
+    TEST(SeriesTests, CountValidElements) {
+        Series<double> s1({1.0, 2.0, 3.0, 4.0, 5.0});
+        s1.set_null(1); // set second element to null
+        s1.set_null(3); // set fourth element to null
+        const auto vcount = s1.valid_count();
+        ASSERT_EQ(vcount, 3); // three valid elements remain
+    }
+
+    TEST(SeriesTests, CountNullElements) {
+        Series<double> s1({1.0, 2.0, 3.0, 4.0, 5.0});
+        s1.set_null(0); // set first element to null
+        s1.set_null(2); // set third element to null
+        s1.set_null(4); // set fifth element to null
+        const auto vcount = s1.null_count();
+        ASSERT_EQ(vcount, 3);
+    }
+
     TEST(SeriesTests, MeanEmpyIsUndefined) {
         const Series<double> s1({});
         EXPECT_EQ(s1.mean(), std::nullopt) << "Expect mean of an empty series to be undefined";
