@@ -413,25 +413,39 @@ namespace df {
         // Will return the identity element (0) if empty
         template <typename T, typename J=DataType_>
         J dot(const Series<T>& other) const {
-            return std::transform_reduce(
-                exec_,
-                data_.begin(), data_.end(),
-                other.data_.begin(),
-                J{},
-                std::plus<>(),
-                std::multiplies<>()
-            );
+            if (size() != other.size()) {
+                throw std::invalid_argument("Series sizes do not match for dot product");
+            }
+
+            with_policy(exec_, [&](auto& exec_){
+                return std::transform_reduce(
+                    exec_,
+                    data_.begin(), data_.end(),
+                    other.data_.begin(),
+                    J{},
+                    std::plus<>(),
+                    std::multiplies<>()
+                );
+            });
         }
 
         // Sum of all elements in the series
         // Returns std::nullopt if the series is empty
         template <typename T = DataType_>
         std::optional<T> sum() const {
-            if (size() == 0) {
+            if (valid_count() == 0) {
                 return std::nullopt;
             }
             return with_policy(exec_, [&](auto& exec_){
-                return std::reduce(exec_, data_.begin(), data_.end(), T{}, std::plus<>{});
+                // sum the values in the series unless the corresponding item in the valid_ mask is false
+                return std::transform_reduce(
+                    exec_,
+                    data_.begin(), data_.end(),
+                    valid_.begin(),
+                    T{},
+                    std::plus<>(),
+                    [](const auto& x, const auto& v) { return v ? x : T{}; }
+                );
             });
         }
 
@@ -439,28 +453,38 @@ namespace df {
         // Returns std::nullopt if the series is empty
         template <typename T = DataType_>
         std::optional<T> mean() const {
-            if (size() == 0) {
+            const auto vcount = valid_count();
+            if (vcount == 0) {
                 return std::nullopt;
             }
-            return sum().value() / static_cast<T>(size());
+            const auto summation = sum();
+            if (!summation.has_value()) {
+                return std::nullopt;
+            }
+            return summation.value() / static_cast<T>(vcount);
         }
 
         // Variance of all elements in the series
         // Returns std::nullopt if the series is empty
         template <typename T = DataType_>
         std::optional<T> variance() const {
-            if (size() == 0) {
+            const auto vcount = valid_count();
+            if (vcount == 0) {
                 return std::nullopt;
             }
-            const auto m = mean().value();
+            const auto m = mean();
+            if (!m.has_value()) {
+                return std::nullopt;
+            }
+            const auto& m_val = m.value();
             return with_policy(exec_, [&](auto& exec_){
                 return std::transform_reduce(
                     exec_,
                     data_.begin(), data_.end(),
                     T{},
                     std::plus<>(),
-                    [&m](const auto& x) { return (x - m) * (x - m); }
-                ) / static_cast<T>(size());
+                    [&m_val](const auto& x) { return (x - m_val) * (x - m_val); }
+                ) / static_cast<T>(vcount);
             });
         }
 
@@ -468,10 +492,11 @@ namespace df {
         // Returns std::nullopt if the series is empty
         template <typename T = DataType_>
         std::optional<T> stddev() const {
-            if (size() == 0) {
+            const auto var = variance();
+            if (!var.has_value()) {
                 return std::nullopt;
             }
-            return std::sqrt(variance().value());
+            return std::sqrt(var.value());
         }
 
         // Minimum element in the series
@@ -543,6 +568,27 @@ namespace df {
         std::size_t size() const { return data_.size(); }
         void reserve(std::size_t n) { data_.reserve(n); }
         void resize(std::size_t n) { data_.resize(n); }
+    
+        // Get the number of null elements in the series
+        std::size_t null_count() const {
+            if (valid_.size() == 0) {
+                return 0;
+            }
+            return with_policy(exec_, [&](auto& exec_){
+                return std::count_if(exec_, valid_.begin(), valid_.end(), [](bool v) { return !v; });
+            });
+        }
+
+        // Get the number of valid elements in the series
+        std::size_t valid_count() const {
+            if (data_.size() == 0) {
+                return 0;
+            }
+
+            return with_policy(exec_, [&](auto& exec_){
+                return std::count_if(exec_, valid_.begin(), valid_.end(), [](bool v) { return v; });
+            });
+        }
 
         // Get element at the index without bounds checking
         DataType_& operator[](std::size_t idx) {
@@ -562,6 +608,17 @@ namespace df {
         // Get element at the index with bounds checking
         const DataType_& at(std::size_t idx) const {
             return data_.at(idx);
+        }
+
+        // Get an optional (could be null) element at the index with bounds checking
+        std::optional<std::reference_wrapper<const DataType_>> get(std::size_t idx) const {
+            if (idx >= data_.size()) {
+                throw std::out_of_range("Index out of range in Series::get");
+            }
+            if (is_null(idx)) {
+                return std::nullopt;
+            }
+            return data_[idx];
         }
 
         // Append a new element to the end of the series
