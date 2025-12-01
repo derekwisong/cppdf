@@ -461,22 +461,26 @@ namespace df {
 
         // Minimum element in the series
         // Returns std::nullopt if the series is empty
-        template <typename T = DataType_>
-        std::optional<std::reference_wrapper<T>> min() const {
+        std::optional<std::reference_wrapper<const DataType_>> min() const {
             if (size() == 0) {
                 return std::nullopt;
             }
-            return *std::min_element(exec_, data_.begin(), data_.end());
+            auto min_it = with_policy(exec_, [&](auto& exec_){
+                return std::min_element(exec_, data_.begin(), data_.end());
+            });
+            return std::ref(*min_it);
         }
 
         // Maximum element in the series
         // Returns std::nullopt if the series is empty
-        template <typename T = DataType_>
-        std::optional<std::reference_wrapper<T>> max() const {
+        std::optional<std::reference_wrapper<const DataType_>> max() const {
             if (size() == 0) {
                 return std::nullopt;
             }
-            return *std::max_element(exec_, data_.begin(), data_.end());
+            auto max_it = with_policy(exec_, [&](auto& exec_){
+                return std::max_element(exec_, data_.begin(), data_.end());
+            });
+            return std::ref(*max_it);
         }
 
         // output the series as "[ *, *, * ]" where * is the type

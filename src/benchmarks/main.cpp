@@ -109,6 +109,60 @@ namespace {
     }
     BENCHMARK(exp_series);
 
+    // Benchmarks for sum, variance, stdev, mean, max, min aggregations
+    void sum_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto s = c1.sum();
+            benchmark::DoNotOptimize(s);
+        }
+    }
+    BENCHMARK(sum_series);
+
+    void mean_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto m = c1.mean();
+            benchmark::DoNotOptimize(m);
+        }
+    }
+    BENCHMARK(mean_series);
+
+    void var_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto v = c1.variance();
+            benchmark::DoNotOptimize(v);
+        }
+    }
+    BENCHMARK(var_series);
+
+    void stdev_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto s = c1.stddev();
+            benchmark::DoNotOptimize(s);
+        }
+    }
+    BENCHMARK(stdev_series);
+
+    void max_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto m = c1.max();
+            benchmark::DoNotOptimize(m);
+        }
+    }
+    BENCHMARK(max_series);
+
+    void min_series(benchmark::State& state) {
+        auto c1 = generate_random_series(NUM_CALCS);
+        for (auto _ : state) {
+            volatile auto m = c1.min();
+            benchmark::DoNotOptimize(m);
+        }
+    }
+    BENCHMARK(min_series);
 
 }  // namespace
 
