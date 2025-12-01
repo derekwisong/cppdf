@@ -53,19 +53,34 @@ namespace df {
         using const_iterator = typename container_type::const_iterator;
 
         // Construct a Series by applying a monadic functor to an input Series
-        template <typename T, typename Func>
-        Series(const Series<T>& other, Func&& func) : data_(other.size()) {
-            other.transform_to(*this, std::forward<Func>(func));
+        template <typename T, typename MonadicFunc>
+        Series(const Series<T>& other, MonadicFunc&& func) : data_(other.size()), valid_(other.valid_) {
+            other.transform_to(*this, std::forward<MonadicFunc>(func));
         }
         
         // Construct a Series by applying a dyadic functor to two input Series
-        template <typename T, typename J, typename Func>
-        Series(const Series<T>& lhs, const Series<J>& rhs, Func&& func)  {
+        template <typename T, typename J, typename DyadicFunc>
+        Series(const Series<T>& lhs, const Series<J>& rhs, DyadicFunc&& func) {
             if (lhs.size() != rhs.size()) {
                 throw std::invalid_argument("Series sizes do not match for dyadic operation");
             }
+
+            // resize data_ and valid_ to match inputs
             data_.resize(lhs.size());
-            lhs.transform_to(rhs, *this, std::forward<Func>(func));
+            valid_.resize(lhs.size());
+
+            // the valid_ mask is the AND of both inputs' valid_ masks
+            with_policy(lhs.exec_, [&](auto& exec_) {
+                std::transform(
+                    exec_,
+                    lhs.valid_.begin(), lhs.valid_.end(),
+                    rhs.valid_.begin(), valid_.begin(),
+                    [](bool a, bool b) { return a && b; }
+                );
+            });
+
+            // apply the transformation
+            lhs.transform_to(rhs, *this, std::forward<DyadicFunc>(func));
         }
 
         explicit Series(std::vector<DataType_> data): data_(std::move(data)) {}
@@ -488,14 +503,25 @@ namespace df {
             os << "[";
             if (obj.data_.size() <= MAX_DISPLAY) {
                 for (auto i = 0; i < obj.data_.size(); ++i) {
-                    os << obj.data_[i];
+                    if (obj.is_null(i)) {
+                        os << "null";
+                    }
+                    else {
+                        os << obj.data_[i];
+                    }
                     if (i < obj.data_.size() - 1) {
                         os << ", ";
                     }
                 }
             }
             else {
-                const auto f = [&os](const auto& x) { os << x << ", "; };
+                const auto f = [&os](const auto& x) {
+                    if (&x == nullptr) {
+                        os << "null";
+                    } else {
+                        os << x << ", ";
+                    }
+                };
                 std::for_each_n(obj.data_.begin(), CHUNK, f);
                 os << "..., ";
                 std::for_each_n(obj.data_.end() - CHUNK, CHUNK - 1, f);
@@ -538,12 +564,51 @@ namespace df {
             return data_.at(idx);
         }
 
+        // Append a new element to the end of the series
+        void append(const DataType_& value) {
+            data_.push_back(value);
+        }
+
+        // Clear all elements from the series
+        void clear() {
+            data_.clear();
+        }
+
+        // Emplace a new element at the end of the series
+        template <typename... Args>
+        void emplace(Args&&... args) {
+            data_.emplace_back(std::forward<Args>(args)...);
+        }
+
+        // set the element at idx to null
+        void set_null(std::size_t idx) {
+            if (data_.size() == 0) {
+                // nothing to do
+                return;
+            }
+
+            if (idx >= valid_.size()) {
+                valid_.resize(std::max(idx + 1, data_.size()), true);
+            }
+
+            valid_[idx] = false;
+        }
+
+        // check if the element at idx is null
+        bool is_null(std::size_t idx) const {
+            // the valid_ vector is only used if there are nulls, so if the index is out of range, it's not null
+            if (idx >= valid_.size()) {
+                return true;
+            }
+            return !valid_[idx];
+        }
 
     private:
         ExecPolicy exec_{ExecPolicy::PAR_UNSEQ};
 
         // The underlying data storage
         std::vector<DataType_> data_;
+        std::vector<bool> valid_;
 
         // Transform this series with the result of a monadic functor applied to each element
         // functor: the monadic functor to apply: functor(this[i]) -> this[i]
