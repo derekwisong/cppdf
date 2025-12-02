@@ -118,6 +118,15 @@ namespace {
         EXPECT_DOUBLE_EQ(s3[2], 2.0);
     }
 
+    TEST(SeriesTests, AddIntAndDoubleSeries) {
+        const Series<int> s1({1, 2, 3});
+        const Series<double> s2({0.5, 1.5, 2.5});
+        const auto s3 = s1 + s2;
+        EXPECT_DOUBLE_EQ(s3[0], 1.5);
+        EXPECT_DOUBLE_EQ(s3[1], 3.5);
+        EXPECT_DOUBLE_EQ(s3[2], 5.5);
+    }
+
     TEST(SeriesTests, MeanCalculation) {
         Series<double> s1({1.0, 2.0, 3.0, 4.0, 5.0});
         const auto mean = s1.mean();

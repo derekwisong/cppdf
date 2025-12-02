@@ -242,6 +242,12 @@ namespace df {
         }
 
         template <typename T>
+        auto&& div(const Series<T>& other) && {
+           div(other);
+           return std::move(*this);
+        }
+
+        template <typename T>
         auto&& rdiv(const T& val) && {
            rdiv(val);
            return std::move(*this);
