@@ -4,5 +4,13 @@
 
 # Instructions
 
-- Execute `go.bash` or use `cmake`
+- Execute `./build.bash` to compile the project
+- The following binaries will be produced:
+  - `./build/src/benchmarks/benchmarks`
+  - `./build/src/tests/tests`
 
+# Example
+
+```bash
+
+```
