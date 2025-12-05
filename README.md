@@ -1,6 +1,8 @@
 # Prerequisites
 
 - Intel Thread Building Blocks (TBB)
+  - Arch: `sudo pacman -Sy intel-oneapi-tbb`
+  - Fedora: `sudo dnf install tbb-devel` 
 
 # Instructions
 
@@ -11,6 +13,11 @@
 
 # Example
 
-```bash
+Get the code, compile it, and run the benchmarks.
 
+```bash
+$ git clone git@github.com:derekwisong/cppdf.git
+$ cd cppdf
+$ ./build.bash
+$ ./build/src/benchmarks/benchmarks
 ```
