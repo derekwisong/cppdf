@@ -27,11 +27,11 @@ find_package(TBB QUIET)
 if(TBB_FOUND)
     message(STATUS "TBB found. Enabling TBB support.")
     target_link_libraries(dataframe
-        PRIVATE
+        PUBLIC
             TBB::tbb
     )
     target_compile_definitions(dataframe
-        PRIVATE
+        PUBLIC
             USE_TBB=1
     )
 else()
